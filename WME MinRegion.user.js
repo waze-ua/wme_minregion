@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      0.1.0
+// @version      0.2.0
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
@@ -20,12 +20,17 @@
 
     var mrStyle = [
         '.icon-globe:before { content: "\\f0ac"; font-family: FontAwesome; font-style: normal; }',
+        '.section-title-1 { padding: 10px; background: #60b1db; margin: 0; color: #fff; font-weight: bold; }',
+        '.section-title-1 small { color: #fff !important; }',
+        '.obj-info-list li { padding: 5px 10px; font-size: 13px; border-bottom: 1px solid #dedede; }',
+        '.obj-info-list li>a { text-decoration: none; cursor: pointer; }',
+        '.obj-info-list { padding: 0; margin: 0; }',
         '.map-obj-info-wrap { background: #fff; }',
         '.map-obj-info-wrap .label-title { color: #fff; padding: 10px 10px; background: #00A6F2; top: 0; left: 0; width: 100%; }',
         '.map-obj-info-wrap .label-title .close { display: none; }',
         '.map-obj-info-wrap>.content { height: 100%; overflow-y: auto; }',
         '.map-obj-info-wrap .obj-info-caption { color: #4075a9; font-size: 1.0625em; position: relative; }',
-        '.map-obj-info-wrap .obj-info-caption .more-info { color: #4075a9; position: absolute; font-size: 10px; text-decoration: none; border-bottom: 1px dashed; line-height: 1; top: 6px; right: 6px; }',
+        '.map-obj-info-wrap .obj-info-caption .more-info { color: #4075a9; position: absolute; font-size: 10px; text-decoration: none; line-height: 1; top: 1px; right: 3px; height: 16px; padding: 4px 10px;}',
         '.map-obj-info-wrap .obj-info-caption>.accordion-toggle { padding: 4px 65px 6px 35px; line-height: 1; text-decoration: none; font-weight: bold; }',
         '.map-obj-info-wrap .obj-info-caption>.accordion-toggle:after { content: "-"; top: 3px; right: 15px; right: auto; left: 10px; height: 15px; width: 15px; border: 1px solid #99B5D1; text-align: center; color: #99B5D1; line-height: 15px; }',
         '.map-obj-info-wrap .obj-info-caption>.accordion-toggle.collapsed:after { content: "+"; }',
@@ -277,59 +282,9 @@
             return lnk;
         }
 
-        function getIdIntersectCallback(res) {
-            var url;
-            if (res.status == 200) {
-                //TODO validation for dead MinRegion
-                var isCityFound = res.responseText.match(/#regionInfo(\d+)/);
-                if (isCityFound) {
-                    url = mrUrl + "/api/format/settlement_template/ato.ato_all_city/atoid/" + isCityFound[1] + "/obl_name,ray_name,nameua,name_fullua,wkb_geometry,atoid,parent_level1,parent_level2,parent_level3,info_json";
-                    sendHTTPRequest(url, 'minregionCheckInMinRegion', 'fa fa-map-o', getInfoCallback);
-                }
-                else {
-                    log("No city ID found");
-                    log(res.responseText);
-                }
-            }
-            else if (res.status == 500) {
-                log(res.responseText);
-                var lnk = getSelectedSegmentLink();
-                if (lnk) {
-                    log("No intersection found, trying 'contains' method...");
-                    url = mrUrl + "/api/format/list_ato_template/ato.ato_all_city/wkb_geometry~'POINT(" + lnk.lon + "%20" + lnk.lat + ")'";
-                    sendHTTPRequest(url, 'minregionCheckInMinRegion', 'fa fa-map-o', getIdContainsCallback);
-                }
-            }
-            else {
-                log(res.responseText);
-            }
-        }
-
-        function getIdContainsCallback(res) {
-            if (res.status == 200) {
-                //TODO validation for dead MinRegion
-                var isCityFound = res.responseText.match(/#regionInfo(\d+)/);
-                if (isCityFound) {
-                    var url = mrUrl + "/api/format/settlement_template/ato.ato_all_city/atoid/" + isCityFound[1] + "/obl_name,ray_name,nameua,name_fullua,wkb_geometry,atoid,parent_level1,parent_level2,parent_level3,info_json";
-                    sendHTTPRequest(url, 'minregionCheckInMinRegion', 'fa fa-map-o', getInfoCallback);
-                }
-            }
-            else if (res.status == 500) {
-                log(res.responseText);
-                if (res.responseText == 'undefined object not found') {
-                    var html = "<span style='color: orangered; font-weight: bold;'>Жодного населеного пункта не знайдено.</span>";
-                    document.getElementById('minregionInfo').innerHTML = html;
-                }
-            }
-            else {
-                log(res.responseText);
-            }
-        }
-
         function getInfoCallback(res) {
             if (validateHTTPResponse(res)) {
                 var text = JSON.parse(res.responseText);
-
                 updateMinRegionInfo(text);
             }
         }
@@ -341,8 +296,8 @@
             if (lnk) {
                 updateMinRegionInfo(emptyResponse);
 
-                var url = mrUrl + "/api/format/list_ato_template/ato.ato_all_city/wkb_geometry&&&&'POINT(" + lnk.lon + "%20" + lnk.lat + ")'";
-                sendHTTPRequest(url, 'minregionCheckInMinRegion', 'fa fa-map-o', getIdIntersectCallback);
+                var url = mrUrl + "/api/format?layer=7376316114267884&view=site&x=" + lnk.lat + "&y=" + lnk.lon + "&index=0&data=geom,name_ua&method=feature_ir._info_object&wrap=map_obj_info_wrap_ato";
+                sendHTTPRequest(url, 'minregionCheckInMinRegion', 'fa fa-map-o', getInfoCallback);
             }
         }
 
@@ -389,6 +344,13 @@
                     case 404:
                         errorMsg = "Інформацію не знайдено!";
                         break;
+                    case 500:
+                        log(res.responseText);
+                        if (res.responseText.match(/data not found table/)) {
+                            var html = "<span style='color: orangered; font-weight: bold;'>Жодного населеного пункта не знайдено.</span>";
+                            document.getElementById('minregionInfo').innerHTML = html;
+                            break;
+                        }
                     default:
                         errorMsg = "Error: unsupported status code - " + res.status;
                         log(res.responseHeaders);
@@ -410,7 +372,7 @@
 
         function updateMinRegionInfo(rs) {
             if (rs && rs.data) {
-                document.getElementById('minregionFoundCity').value = rs.data.name_fullua;
+                document.getElementById('minregionFoundCity').value = (rs.data.name_ua ? rs.data.name_ua : "");
 
                 var fixedContent = rs.html.replace("<a/>", "</a>"); // bug in MinRegion
                 fixedContent = fixedContent.replace(/<\/td>[\n\r\s]*<\/td>/g, "</td>"); // bug in MinRegion
@@ -419,19 +381,28 @@
 
                 document.getElementById('minregionInfo').innerHTML = fixedContent;
 
-                var as = document.querySelectorAll("a[map-action=getInfo]");
+                // map-action="info-7376316114267884,50"
+                // map-action="info-49.814676171752,23.893126713468,0"
+                var as = document.querySelectorAll("a[map-action|=info]");
                 as.forEach(function (elem) {
-                    var obj = elem.attributes.obj;
+                    var obj = elem.attributes["map-action"];
                     if (obj && obj.value) {
                         elem.onclick = function () {
-                            var url = mrUrl + obj.value.replace("doc=", "");
+                            var arr = obj.value.replace("info-", "").split(",");
+                            var url = mrUrl;
+                            if (arr.length == 3) {
+                                url += "/api/format?layer=7376316114267884&view=site&x=" + arr[0] + "&y=" + arr[1] + "&index=" + arr[2] + "&data=geom,name_ua&method=feature_ir._info_object&wrap=map_obj_info_wrap_ato";
+                            }
+                            else {
+                                url += "/api-user/map-info?layer=7376316114267884&id=" + arr[1];
+                            }
                             sendHTTPRequest(url, 'minregionCheckInMinRegion', 'fa fa-map-o', getInfoCallback);
                         };
                     }
                 });
 
                 // draw border
-                drawCityBorder(rs.data.name_fullua, rs.data.wkb_geometry);
+                drawCityBorder(rs.data.name_ua, rs.data.geom);
             } else {
                 document.getElementById('minregionFoundCity').value = 'N/A';
                 document.getElementById('minregionInfo').innerHTML = '';
