@@ -9,9 +9,9 @@
 // @connect      atu.minregion.gov.ua
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setClipboard
-// @updateURL    https://github.com/madnut-ua/wme_minregion/raw/master/WME%20MinRegion.user.js
-// @downloadURL  https://github.com/madnut-ua/wme_minregion/raw/master/WME%20MinRegion.user.js
-// @supportURL   https://github.com/madnut-ua/wme_minregion/issues
+// @updateURL    https://github.com/waze-ua/wme_minregion/raw/master/WME%20MinRegion.user.js
+// @downloadURL  https://github.com/waze-ua/wme_minregion/raw/master/WME%20MinRegion.user.js
+// @supportURL   https://github.com/waze-ua/wme_minregion/issues
 // @grant        GM_addStyle
 // ==/UserScript==
 
