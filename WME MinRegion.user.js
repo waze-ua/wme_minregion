@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      0.2.0
+// @version      0.3.1
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
 // @exclude      https://*waze.com/*user/editor*
 // @connect      atu.minregion.gov.ua
+// @connect      localhost
+// @connect      wazeolenta.org
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setClipboard
 // @updateURL    https://github.com/waze-ua/wme_minregion/raw/master/WME%20MinRegion.user.js
@@ -109,6 +111,8 @@
 
     var requestsTimeout = 20000; // in ms
     var mrUrl = "http://atu.minregion.gov.ua";
+    var requestUrl = "http://wazeolenta.org";
+    //var requestUrl = "http://localhost:51672";
 
     function log(message) {
         if (typeof message === 'string') {
@@ -210,8 +214,12 @@
                             '<div class="form-group">' +
                             // check name in MinRegion
                             '<div class="controls">' +
-                            '<button id="minregionCheckInMinRegion" class="action-button btn btn-lightning btn-positive" type="button" title="Перевіртити інформацію на сайті МінРегіону">' +
+                            '<button id="minregionCheckInMinRegion" class="action-button btn btn-lightning btn-positive" type="button" title="Перевіртити інформацію на сайті МінРегіону" style="margin-bottom: 10px;">' +
                             '<i class="fa fa-map-o"></i>&nbsp;Отримати інформацію' +
+                            '</button>' +
+                            // send request
+                            '<button id="minregionSendRequest" class="action-button btn btn-positive btn-success" type="button" title="Відправити запит на створення цього НП" style="margin-bottom: 10px;">' +
+                            '<i class="fa fa-plus-square"></i>&nbsp;Запит на створення' +
                             '</button>' +
                             '</div>' +
                             '</div>' +
@@ -228,7 +236,17 @@
                             '</span>' +
                             '</div>' +
                             '</div>' +
+                            '<div class="form-group">' +
                             '<div id="minregionInfo" class="map-obj-info-wrap">' +
+                            '</div>' +
+                            '</div>' +
+                            // settings
+                            '<div class="form-group">' +
+                            '<label class="control-label">Налаштування</label>' +
+                            '<div class="controls">' +
+                            '<label>Ваш email:</label>' +
+                            '<input class="form-control" autocomplete="off" id="minregionUserEmail" name="" title="Email для відправки підтвердження запиту" type="text" value="" />' +
+                            '</div>' +
                             '</div>';
 
                         panelElement.innerHTML = html;
@@ -242,7 +260,19 @@
                 }
 
                 if (panelElement.id !== '') {
+                    var email = localStorage.getItem('minregionUserEmail');
+                    if (email) {
+                        document.getElementById('minregionUserEmail').value = email;
+                    }
+                    document.getElementById('minregionUserEmail').onchange = function () {
+                        localStorage.setItem('minregionUserEmail', this.value);
+                    };
+                    
                     document.getElementById('minregionCheckInMinRegion').onclick = onCheckMinRegion;
+                    
+                    document.getElementById('minregionSendRequest').onclick = onSendRequest;
+                    document.getElementById('minregionSendRequest').disabled = true;
+                    
                     document.getElementById('minregionCopyFoundCity').onclick = function () {
                         var cityName = document.getElementById('minregionFoundCity').value;
                         if (cityName !== '' && cityName !== 'N/A') {
@@ -268,14 +298,22 @@
             }
         }
 
-        function getSelectedSegmentLink() {
-            var lnk;
-            var selectedItem = Waze.selectionManager.selectedItems[0];
-            if (selectedItem) {
+        function getSelectedSegmentInfo() {
+            var lnk = {};
+            var segments = [];
+            var selectedItems = Waze.selectionManager.selectedItems;
+            if (selectedItems.length > 0) {
                 log("MinRegion check by object Centroid");
 
-                var centroid = selectedItem.geometry.getCentroid(true); // without "true" it will return start point as a centroid
-                lnk = OpenLayers.Layer.SphericalMercator.inverseMercator(centroid.x, centroid.y);
+                var centroid = selectedItems[0].geometry.getCentroid(true); // without "true" it will return start point as a centroid
+                var coords = OpenLayers.Layer.SphericalMercator.inverseMercator(centroid.x, centroid.y);
+                lnk.lon = coords.lon;
+                lnk.lat = coords.lat;
+                
+                selectedItems.forEach(function(item) {
+                    segments.push(item.model.attributes.id);
+                });
+                lnk.segments = segments;
             } else {
                 log("no selected item found");
             }
@@ -291,16 +329,52 @@
 
         function onCheckMinRegion() {
             var emptyResponse = {};
-            var lnk = getSelectedSegmentLink();
+            var lnk = getSelectedSegmentInfo();
 
-            if (lnk) {
+            if (lnk.lat && lnk.lon) {
                 updateMinRegionInfo(emptyResponse);
 
                 var url = mrUrl + "/api/format?layer=7376316114267884&view=site&x=" + lnk.lat + "&y=" + lnk.lon + "&index=0&data=geom,name_ua&method=feature_ir._info_object&wrap=map_obj_info_wrap_ato";
                 sendHTTPRequest(url, 'minregionCheckInMinRegion', 'fa fa-map-o', getInfoCallback);
             }
         }
-
+        
+        function sendRequestCallback(res) {
+            if (validateHTTPResponse(res)) {
+                var text = JSON.parse(res.responseText);
+                var value = JSON.parse(text.value);
+                alert('Запит про створення населеного пункту успішно відправлено! (' + value.result + ')');
+            }
+        }
+        
+        function onSendRequest() {
+            var lnk = getSelectedSegmentInfo();
+            var author = Waze.loginManager.user.userName;
+            var email = document.getElementById('minregionUserEmail').value;
+            var zoom = "4";
+            var cityname = document.getElementById('minregionFoundCity').value;
+            
+            if (Waze.model.actionManager.unsavedActionsNum() > 0) {
+                alert('Будь ласка, збережіть всі Ваші зміни перед тим, як відправляти запит на створення НП!');
+                return;
+            }
+            
+            if (email && validateEmail(email)) {
+                if (cityname && lnk.lon && lnk.lat) {
+                    var permalink = location.origin + location.pathname + "?env=row&lon=" + lnk.lon + "&lat=" + lnk.lat + "&zoom=" + zoom + "&segments=" + lnk.segments.join();
+                    permalink = encodeURIComponent(permalink);
+                    var url = requestUrl + "/api/uk/requests/city?user=" + author + "&email=" + email + "&permalink=" + permalink + "&cityname=" + cityname;
+                    sendHTTPRequest(url, 'minregionSendRequest', 'fa fa-plus-square', sendRequestCallback);
+                }
+                else {
+                    alert('Помилка: Назва населеного пункту та його координати не можуть бути пустими!');
+                }
+            }
+            else {
+                alert('MinRegion:\nЩоб мати можливіть надсилати запити, валідна Email адреса має бути додана у налаштуваннях скрипта.');
+            }
+        }
+        
         function sendHTTPRequest(url, buttonID, btnClass, callback) {
             setButtonClass(buttonID, 'fa fa-spinner fa-pulse'); // to make ViolentMonkey happy
             GM_xmlhttpRequest({
@@ -370,6 +444,11 @@
             return result;
         }
 
+        function validateEmail(email) {
+            var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+            return re.test(String(email).toLowerCase());
+        }
+        
         function updateMinRegionInfo(rs) {
             if (rs && rs.data) {
                 document.getElementById('minregionFoundCity').value = (rs.data.name_ua ? rs.data.name_ua : "");
@@ -400,10 +479,12 @@
                         };
                     }
                 });
-
+                document.getElementById('minregionSendRequest').disabled = false;
+                
                 // draw border
                 drawCityBorder(rs.data.name_ua, rs.data.geom);
             } else {
+                document.getElementById('minregionSendRequest').disabled = true;
                 document.getElementById('minregionFoundCity').value = 'N/A';
                 document.getElementById('minregionInfo').innerHTML = '';
 
