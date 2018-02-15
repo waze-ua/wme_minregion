@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      0.3.1
+// @version      0.3.2
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
@@ -291,13 +291,16 @@
 
         function setButtonClass(id, className) {
             if (id) {
-                var iButton = document.getElementById(id).firstChild;
-                if (iButton && iButton.className !== className) {
-                    iButton.className = className;
+                var elem = document.getElementById(id);
+                if (elem) {
+                    var iButton = elem.firstChild;
+                    if (iButton && iButton.className !== className) {
+                        iButton.className = className;
+                    }
                 }
             }
         }
-
+        
         function getSelectedSegmentInfo() {
             var lnk = {};
             var segments = [];
@@ -314,6 +317,17 @@
                     segments.push(item.model.attributes.id);
                 });
                 lnk.segments = segments;
+                
+                // get city name (use 1st segment only, sorry)
+                var attr = selectedItems[0].model.attributes;
+                if (attr) {
+                    var street = Waze.model.streets.get(attr.primaryStreetID);
+                    if (street && street.cityID) {
+                        //lnk.cityID = street.cityID;
+                        var city = Waze.model.cities.get(street.cityID);
+                        lnk.cityName = city.attributes.name;
+                    }
+                }
             } else {
                 log("no selected item found");
             }
@@ -348,26 +362,41 @@
         }
         
         function onSendRequest() {
-            var lnk = getSelectedSegmentInfo();
-            var author = Waze.loginManager.user.userName;
             var email = document.getElementById('minregionUserEmail').value;
-            var zoom = "4";
-            var cityname = document.getElementById('minregionFoundCity').value;
-            
-            if (Waze.model.actionManager.unsavedActionsNum() > 0) {
-                alert('Будь ласка, збережіть всі Ваші зміни перед тим, як відправляти запит на створення НП!');
-                return;
-            }
-            
             if (email && validateEmail(email)) {
+                var lnk = getSelectedSegmentInfo();
+                var author = Waze.loginManager.user.userName;
+                var zoom = "4";
+                var cityname = document.getElementById('minregionFoundCity').value;
+            
+                if (Waze.model.actionManager.unsavedActionsNum() > 0) {
+                    alert('MinRegion:\nБудь ласка, збережіть всі Ваші зміни перед тим, як відправляти запит на створення НП!');
+                    return;
+                }
+                
+                if (lnk.cityName && lnk.cityName.startsWith(cityname)) {
+                    alert('MinRegion:\nСхоже, що Ви намагаєтесь відіслати запит на створення населеного пункту, який вже існує.\nНаврядчи це буде комусь корисно :)');
+                    return;
+                }
+            
                 if (cityname && lnk.lon && lnk.lat) {
-                    var permalink = location.origin + location.pathname + "?env=row&lon=" + lnk.lon + "&lat=" + lnk.lat + "&zoom=" + zoom + "&segments=" + lnk.segments.join();
-                    permalink = encodeURIComponent(permalink);
-                    var url = requestUrl + "/api/uk/requests/city?user=" + author + "&email=" + email + "&permalink=" + permalink + "&cityname=" + cityname;
-                    sendHTTPRequest(url, 'minregionSendRequest', 'fa fa-plus-square', sendRequestCallback);
+                    var existUrl = "https://www.waze.com/row-Descartes-live/app/CityExistence?cityName=" + cityname + "&countryID=232&stateID=1&box=38.245107%2C51.736717%2C38.282278%2C51.743494";
+                    sendHTTPRequest(existUrl, null, null, function(res) {
+                        if (validateHTTPResponse(res)) {
+                            var text = JSON.parse(res.responseText);
+
+                            if (!text.existingCity) {
+                                var permalink = location.origin + location.pathname + "?env=row&lon=" + lnk.lon + "&lat=" + lnk.lat + "&zoom=" + zoom + "&segments=" + lnk.segments.join();
+                                permalink = encodeURIComponent(permalink);
+                                var url = requestUrl + "/api/uk/requests/city?user=" + author + "&email=" + email + "&permalink=" + permalink + "&cityname=" + cityname;
+                                sendHTTPRequest(url, 'minregionSendRequest', 'fa fa-plus-square', sendRequestCallback);
+                            }
+                            alert('MinRegion:\nПомилка: Населений пункт з такою назвою вже існує.');
+                        }
+                    });
                 }
                 else {
-                    alert('Помилка: Назва населеного пункту та його координати не можуть бути пустими!');
+                    alert('MinRegion:\nПомилка: Назва населеного пункту та його координати не можуть бути пустими!');
                 }
             }
             else {
