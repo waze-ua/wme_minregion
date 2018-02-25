@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      0.3.3
+// @version      0.3.4
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
@@ -123,10 +123,10 @@
     }
 
     function MinRegion_bootstrap() {
-        if (typeof Waze === "undefined" ||
-            typeof Waze.map === "undefined" ||
-            typeof Waze.selectionManager === "undefined" ||
-            typeof Waze.model.countries === "undefined" ||
+        if (typeof W === "undefined" ||
+            typeof W.map === "undefined" ||
+            typeof W.selectionManager === "undefined" ||
+            typeof W.model.countries === "undefined" ||
             typeof I18n === "undefined" ||
             typeof I18n.translations === "undefined") {
             setTimeout(MinRegion_bootstrap, 700);
@@ -145,12 +145,12 @@
             return;
         }
 
-        var bordersLayer = new OpenLayers.Layer.Vector("MinRegion City Borders", {
+        var bordersLayer = new OL.Layer.Vector("MinRegion City Borders", {
             displayInLayerSwitcher: true,
             uniqueName: "MinRegionBorders"
         });
 
-        Waze.map.addLayer(bordersLayer);
+        W.map.addLayer(bordersLayer);
 
         function drawCityBorder(cityname, gm) {
             bordersLayer.destroyFeatures();
@@ -160,15 +160,15 @@
                         var polyPoints = new Array(itemsB.length);
                         itemsB.forEach(function (itemsC, k, arr) {
 
-                            polyPoints[k] = new OpenLayers.Geometry.Point(itemsC[0], itemsC[1]).transform(
-                                new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
-                                Waze.map.getProjectionObject() // to Spherical Mercator Projection
+                            polyPoints[k] = new OL.Geometry.Point(itemsC[0], itemsC[1]).transform(
+                                new OL.Projection("EPSG:4326"), // transform from WGS 1984
+                                W.map.getProjectionObject() // to Spherical Mercator Projection
                             );
                         });
-                        var polygon = new OpenLayers.Geometry.Polygon(new OpenLayers.Geometry.LinearRing(polyPoints));
+                        var polygon = new OL.Geometry.Polygon(new OL.Geometry.LinearRing(polyPoints));
                         var site_style = new borderStyle('#FFFF00', cityname);
 
-                        var poly = new OpenLayers.Feature.Vector(polygon, null, site_style);
+                        var poly = new OL.Feature.Vector(polygon, null, site_style);
                         bordersLayer.addFeatures(poly);
                     });
                 });
@@ -188,7 +188,7 @@
 
         function drawTab() {
             var panelID = "WME-MinRegion";
-            var sItems = Waze.selectionManager.selectedItems;
+            var sItems = W.selectionManager.selectedItems;
 
             if (!document.getElementById(panelID) && sItems.length > 0 && sItems[0].model.type === 'segment') {
                 var panelElement = document.createElement('div');
@@ -304,12 +304,12 @@
         function getSelectedSegmentInfo() {
             var lnk = {};
             var segments = [];
-            var selectedItems = Waze.selectionManager.selectedItems;
+            var selectedItems = W.selectionManager.selectedItems;
             if (selectedItems.length > 0) {
                 log("MinRegion check by object Centroid");
 
                 var centroid = selectedItems[0].geometry.getCentroid(true); // without "true" it will return start point as a centroid
-                var coords = OpenLayers.Layer.SphericalMercator.inverseMercator(centroid.x, centroid.y);
+                var coords = OL.Layer.SphericalMercator.inverseMercator(centroid.x, centroid.y);
                 lnk.lon = coords.lon;
                 lnk.lat = coords.lat;
                 
@@ -321,10 +321,10 @@
                 // get city name (use 1st segment only, sorry)
                 var attr = selectedItems[0].model.attributes;
                 if (attr) {
-                    var street = Waze.model.streets.get(attr.primaryStreetID);
+                    var street = W.model.streets.get(attr.primaryStreetID);
                     if (street && street.cityID) {
                         //lnk.cityID = street.cityID;
-                        var city = Waze.model.cities.get(street.cityID);
+                        var city = W.model.cities.get(street.cityID);
                         lnk.cityName = city.attributes.name;
                     }
                 }
@@ -365,11 +365,11 @@
             var email = document.getElementById('minregionUserEmail').value;
             if (email && validateEmail(email)) {
                 var lnk = getSelectedSegmentInfo();
-                var author = Waze.loginManager.user.userName;
+                var author = W.loginManager.user.userName;
                 var zoom = "4";
                 var cityname = document.getElementById('minregionFoundCity').value;
             
-                if (Waze.model.actionManager.unsavedActionsNum() > 0) {
+                if (W.model.actionManager.unsavedActionsNum() > 0) {
                     alert('MinRegion:\nБудь ласка, збережіть всі Ваші зміни перед тим, як відправляти запит на створення НП!');
                     return;
                 }
