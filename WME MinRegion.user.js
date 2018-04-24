@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      0.3.4
+// @version      0.3.5
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
@@ -188,7 +188,7 @@
 
         function drawTab() {
             var panelID = "WME-MinRegion";
-            var sItems = W.selectionManager.selectedItems;
+            var sItems = W.selectionManager.getSelectedFeatures();
 
             if (!document.getElementById(panelID) && sItems.length > 0 && sItems[0].model.type === 'segment') {
                 var panelElement = document.createElement('div');
@@ -304,7 +304,7 @@
         function getSelectedSegmentInfo() {
             var lnk = {};
             var segments = [];
-            var selectedItems = W.selectionManager.selectedItems;
+            var selectedItems = W.selectionManager.getSelectedFeatures();
             if (selectedItems.length > 0) {
                 log("MinRegion check by object Centroid");
 
