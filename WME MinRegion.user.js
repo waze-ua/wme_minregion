@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      0.3.5
+// @version      0.3.6
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
@@ -218,8 +218,8 @@
                             '<i class="fa fa-map-o"></i>&nbsp;Отримати інформацію' +
                             '</button>' +
                             // send request
-                            '<button id="minregionSendRequest" class="action-button btn btn-positive btn-success" type="button" title="Відправити запит на створення цього НП" style="margin-bottom: 10px;">' +
-                            '<i class="fa fa-plus-square"></i>&nbsp;Запит на створення' +
+                            '<button id="minregionSendRequest" class="action-button btn btn-positive btn-success" type="button" title="Відправити запит на створення НП" style="margin-bottom: 10px;">' +
+                            '<i class="fa fa-plus-square"></i>&nbsp;Запит на створення НП' +
                             '</button>' +
                             '</div>' +
                             '</div>' +
@@ -228,7 +228,7 @@
                             '<div style="float:right; z-index:100; cursor:pointer; top:0; right:0;" id="minregionClearInfo" title="Очистити дані"><i class="fa fa-times-circle fa-lg" aria-hidden="true"></i></div>' +
                             '<label class="control-label">Об\'єкт</label>' +
                             '<div class="controls input-group">' +
-                            '<input class="form-control" autocomplete="off" id="minregionFoundCity" name="" title="Знайдений об\'єкт" type="text" value="N/A" readonly="readonly" />' +
+                            '<input class="form-control" autocomplete="off" id="minregionFoundCity" name="" title="Знайдений об\'єкт" type="text" value="" readonly="readonly" />' +
                             '<span class="input-group-btn">' +
                             '<button id="minregionCopyFoundCity" class="btn btn-primary" type="button" data-original-title="" title="Скопіювати у буфер обміну" style="padding: 0 8px; border-bottom-left-radius: 0; border-top-left-radius: 0; font-size: 16px">' +
                             '<i class="fa fa-clipboard"></i>' +
@@ -269,13 +269,11 @@
                     };
                     
                     document.getElementById('minregionCheckInMinRegion').onclick = onCheckMinRegion;
-                    
                     document.getElementById('minregionSendRequest').onclick = onSendRequest;
-                    document.getElementById('minregionSendRequest').disabled = true;
                     
                     document.getElementById('minregionCopyFoundCity').onclick = function () {
                         var cityName = document.getElementById('minregionFoundCity').value;
-                        if (cityName !== '' && cityName !== 'N/A') {
+                        if (cityName !== '') {
                             GM_setClipboard(cityName);
                         }
                         return false;
@@ -379,6 +377,13 @@
                     return;
                 }
             
+                if (!cityname || cityname === '') {
+                    cityname = prompt('MinRegion:\nНаселений пункт не було ідентифіковано. Якщо бажаєте відправити запит, введіть назву НП вручну');
+                    if (cityname == null) {
+                        return;
+                    }
+                }
+                
                 if (cityname && lnk.lon && lnk.lat) {
                     var existUrl = "https://www.waze.com/row-Descartes-live/app/CityExistence?cityName=" + cityname + "&countryID=232&stateID=1&box=38.245107%2C51.736717%2C38.282278%2C51.743494";
                     sendHTTPRequest(existUrl, null, null, function(res) {
@@ -510,13 +515,11 @@
                         };
                     }
                 });
-                document.getElementById('minregionSendRequest').disabled = false;
                 
                 // draw border
                 drawCityBorder(rs.data.name_ua, rs.data.geom);
             } else {
-                document.getElementById('minregionSendRequest').disabled = true;
-                document.getElementById('minregionFoundCity').value = 'N/A';
+                document.getElementById('minregionFoundCity').value = '';
                 document.getElementById('minregionInfo').innerHTML = '';
 
                 drawCityBorder(null, null);
