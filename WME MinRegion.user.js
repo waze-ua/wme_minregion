@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      0.3.6
+// @version      0.3.7
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
@@ -389,15 +389,13 @@
                     sendHTTPRequest(existUrl, null, null, function(res) {
                         if (validateHTTPResponse(res)) {
                             var text = JSON.parse(res.responseText);
-
-                            if (!text.existingCity) {
+                            
+                            if (!text.existingCity ||
+                                (text.existingCity && confirm('MinRegion:\nНаселений пункт з такою назвою вже існує у Waze.\nВи впевнені, що бажаєте надіслати запит на створення?'))) {
                                 var permalink = location.origin + location.pathname + "?env=row&lon=" + lnk.lon + "&lat=" + lnk.lat + "&zoom=" + zoom + "&segments=" + lnk.segments.join();
                                 permalink = encodeURIComponent(permalink);
                                 var url = requestUrl + "/api/uk/requests/city?user=" + author + "&email=" + email + "&permalink=" + permalink + "&cityname=" + cityname;
                                 sendHTTPRequest(url, 'minregionSendRequest', 'fa fa-plus-square', sendRequestCallback);
-                            }
-                            else {
-                                alert('MinRegion:\nПомилка: Населений пункт з такою назвою вже існує у Waze.');
                             }
                         }
                     });
