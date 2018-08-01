@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      0.3.7
+// @version      2018.08.01.001
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
@@ -319,10 +319,10 @@
                 // get city name (use 1st segment only, sorry)
                 var attr = selectedItems[0].model.attributes;
                 if (attr) {
-                    var street = W.model.streets.get(attr.primaryStreetID);
+                    var street = W.model.streets.getObjectById(attr.primaryStreetID);
                     if (street && street.cityID) {
                         //lnk.cityID = street.cityID;
-                        var city = W.model.cities.get(street.cityID);
+                        var city = W.model.cities.getObjectById(street.cityID);
                         lnk.cityName = city.attributes.name;
                     }
                 }
