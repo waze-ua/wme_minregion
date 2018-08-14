@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      2018.08.01.001
+// @version      2018.08.14.001
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
@@ -346,7 +346,7 @@
             if (lnk.lat && lnk.lon) {
                 updateMinRegionInfo(emptyResponse);
 
-                var url = mrUrl + "/api/format?layer=7376316114267884&view=site&x=" + lnk.lat + "&y=" + lnk.lon + "&index=0&data=geom,name_ua&method=feature_ir._info_object&wrap=map_obj_info_wrap_ato";
+                var url = mrUrl + "/api/format?doct_id=layer_object_info&layer=7376316114267884&view=site&x=" + lnk.lat + "&y=" + lnk.lon + "&index=0&data=geom,name_ua&method=feature_ir._info_object&wrap=map_obj_info_wrap_ato";
                 sendHTTPRequest(url, 'minregionCheckInMinRegion', 'fa fa-map-o', getInfoCallback);
             }
         }
