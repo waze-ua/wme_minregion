@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      2018.08.14.001
+// @version      2018.11.21.001
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
@@ -392,10 +392,20 @@
                             
                             if (!text.existingCity ||
                                 (text.existingCity && confirm('MinRegion:\nНаселений пункт з такою назвою вже існує у Waze.\nВи впевнені, що бажаєте надіслати запит на створення?'))) {
-                                var permalink = location.origin + location.pathname + "?env=row&lon=" + lnk.lon + "&lat=" + lnk.lat + "&zoom=" + zoom + "&segments=" + lnk.segments.join();
-                                permalink = encodeURIComponent(permalink);
-                                var url = requestUrl + "/api/uk/requests/city?user=" + author + "&email=" + email + "&permalink=" + permalink + "&cityname=" + cityname;
-                                sendHTTPRequest(url, 'minregionSendRequest', 'fa fa-plus-square', sendRequestCallback);
+                                    
+                                // check for status
+                                var isEliminated = /Ліквідований/.test(document.getElementById('minregionInfo').innerHTML);
+                                if (!isEliminated ||
+                                    (isEliminated && confirm('MinRegion:\nНаселений пункт ЛІКВІДОВАНО.\nВи впевнені, що бажаєте надіслати запит на створення?'))) {
+                                        
+                                    if (isEliminated) cityname = cityname + ' (ЛІКВІДОВАНИЙ)';
+                                    
+                                    var permalink = location.origin + location.pathname + "?env=row&lon=" + lnk.lon + "&lat=" + lnk.lat + "&zoom=" + zoom + "&segments=" + lnk.segments.join();
+                                    permalink = encodeURIComponent(permalink);
+                                    cityname = encodeURIComponent(cityname);
+                                    var url = requestUrl + "/api/uk/requests/city?user=" + author + "&email=" + email + "&permalink=" + permalink + "&cityname=" + cityname;
+                                    sendHTTPRequest(url, 'minregionSendRequest', 'fa fa-plus-square', sendRequestCallback);
+                                }
                             }
                         }
                     });
