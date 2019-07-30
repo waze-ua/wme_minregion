@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      2019.05.16.001
+// @version      2019.07.31.001
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
@@ -267,10 +267,10 @@
                     document.getElementById('minregionUserEmail').onchange = function () {
                         localStorage.setItem('minregionUserEmail', this.value);
                     };
-                    
+
                     document.getElementById('minregionCheckInMinRegion').onclick = onCheckMinRegion;
                     document.getElementById('minregionSendRequest').onclick = onSendRequest;
-                    
+
                     document.getElementById('minregionCopyFoundCity').onclick = function () {
                         var cityName = document.getElementById('minregionFoundCity').value;
                         if (cityName !== '') {
@@ -463,8 +463,8 @@
                         errorMsg = "Інформацію не знайдено!";
                         break;
                     case 500:
-                        log(res.responseText);
-                        if (res.responseText.match(/data not found table/)) {
+                        log(res.statusText);
+                        if (res.responseText && res.responseText.match(/data not found table/)) {
                             var html = "<span style='color: orangered; font-weight: bold;'>Жодного населеного пункта не знайдено.</span>";
                             document.getElementById('minregionInfo').innerHTML = html;
                             break;
