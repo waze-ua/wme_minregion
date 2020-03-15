@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      2019.07.31.001
+// @version      2020.03.15.001
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
 // @exclude      https://*waze.com/*user/editor*
 // @connect      atu.gki.com.ua
 // @connect      localhost
-// @connect      wazeolenta.org
+// @connect      wazeolenta.com
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setClipboard
 // @updateURL    https://github.com/waze-ua/wme_minregion/raw/master/WME%20MinRegion.user.js
@@ -111,7 +111,7 @@
 
     var requestsTimeout = 20000; // in ms
     var mrUrl = "http://atu.gki.com.ua";
-    var requestUrl = "http://wazeolenta.org";
+    var requestUrl = "http://wazeolenta.com/wzl";
     //var requestUrl = "http://localhost:51672";
 
     function log(message) {
