@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      2020.03.15.001
+// @version      2020.06.15.001
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
@@ -145,7 +145,7 @@
             return;
         }
 
-        var bordersLayer = new OL.Layer.Vector("MinRegion City Borders", {
+        var bordersLayer = new OpenLayers.Layer.Vector("MinRegion City Borders", {
             displayInLayerSwitcher: true,
             uniqueName: "MinRegionBorders"
         });
@@ -160,15 +160,15 @@
                         var polyPoints = new Array(itemsB.length);
                         itemsB.forEach(function (itemsC, k, arr) {
 
-                            polyPoints[k] = new OL.Geometry.Point(itemsC[0], itemsC[1]).transform(
-                                new OL.Projection("EPSG:4326"), // transform from WGS 1984
+                            polyPoints[k] = new OpenLayers.Geometry.Point(itemsC[0], itemsC[1]).transform(
+                                new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
                                 W.map.getProjectionObject() // to Spherical Mercator Projection
                             );
                         });
-                        var polygon = new OL.Geometry.Polygon(new OL.Geometry.LinearRing(polyPoints));
+                        var polygon = new OpenLayers.Geometry.Polygon(new OpenLayers.Geometry.LinearRing(polyPoints));
                         var site_style = new borderStyle('#FFFF00', cityname);
 
-                        var poly = new OL.Feature.Vector(polygon, null, site_style);
+                        var poly = new OpenLayers.Feature.Vector(polygon, null, site_style);
                         bordersLayer.addFeatures(poly);
                     });
                 });
@@ -307,7 +307,7 @@
                 log("MinRegion check by object Centroid");
 
                 var centroid = selectedItems[0].geometry.getCentroid(true); // without "true" it will return start point as a centroid
-                var coords = OL.Layer.SphericalMercator.inverseMercator(centroid.x, centroid.y);
+                var coords = OpenLayers.Layer.SphericalMercator.inverseMercator(centroid.x, centroid.y);
                 lnk.lon = coords.lon;
                 lnk.lat = coords.lat;
                 
