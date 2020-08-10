@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      2020.06.15.001
+// @version      2020.08.10.001
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
@@ -199,62 +199,58 @@
                     return;
                 }
 
-                var navTabs = getElementsByClassName('nav-tabs', userTabs)[0];
-                if (typeof navTabs !== "undefined") {
-                    var tabContent = getElementsByClassName('tab-content', userTabs)[0];
+                var navTabs = userTabs.querySelector('.nav-tabs');
+                var tabContent = userTabs.querySelector('.tab-content');
+                
+                if (navTabs && tabContent) {
+                    var newtab = document.createElement('li');
+                    newtab.innerHTML = '<a href="#' + panelID + '" id="minregionTab" data-toggle="tab">MinRegion</a>';
+                    navTabs.appendChild(newtab);
 
-                    if (typeof tabContent !== "undefined") {
-                        var newtab = document.createElement('li');
-                        newtab.innerHTML = '<a href="#' + panelID + '" id="minregionTab" data-toggle="tab">MinRegion</a>';
-                        navTabs.appendChild(newtab);
+                    var html =
+                        '<h4>MinRegion <sup>' + GM_info.script.version + '</sup></h4>' +
+                        '</br>' +
+                        '<div class="form-group">' +
+                        // check name in MinRegion
+                        '<div class="controls">' +
+                        '<button id="minregionCheckInMinRegion" class="action-button btn btn-lightning btn-positive" type="button" title="Перевірити інформацію на сайті МінРегіону" style="margin-bottom: 10px;">' +
+                        '<i class="fa fa-map-o"></i>&nbsp;Отримати інформацію' +
+                        '</button>' +
+                        // send request
+                        '<button id="minregionSendRequest" class="action-button btn btn-positive btn-success" type="button" title="Відправити запит на створення НП" style="margin-bottom: 10px;">' +
+                        '<i class="fa fa-plus-square"></i>&nbsp;Запит на створення НП' +
+                        '</button>' +
+                        '</div>' +
+                        '</div>' +
+                        // info
+                        '<div class="form-group">' +
+                        '<div style="float:right; z-index:100; cursor:pointer; top:0; right:0;" id="minregionClearInfo" title="Очистити дані"><i class="fa fa-times-circle fa-lg" aria-hidden="true"></i></div>' +
+                        '<label class="control-label">Об\'єкт</label>' +
+                        '<div class="controls input-group">' +
+                        '<input class="form-control" autocomplete="off" id="minregionFoundCity" name="" title="Знайдений об\'єкт" type="text" value="" readonly="readonly" />' +
+                        '<span class="input-group-btn">' +
+                        '<button id="minregionCopyFoundCity" class="btn btn-primary" type="button" data-original-title="" title="Скопіювати у буфер обміну" style="padding: 0 8px; border-bottom-left-radius: 0; border-top-left-radius: 0; font-size: 16px">' +
+                        '<i class="fa fa-clipboard"></i>' +
+                        '</button>' +
+                        '</span>' +
+                        '</div>' +
+                        '</div>' +
+                        '<div class="form-group">' +
+                        '<div id="minregionInfo" class="map-obj-info-wrap">' +
+                        '</div>' +
+                        '</div>' +
+                        // settings
+                        '<div class="form-group">' +
+                        '<label class="control-label">Налаштування</label>' +
+                        '<div class="controls">' +
+                        '<label>Ваш email:</label>' +
+                        '<input class="form-control" autocomplete="off" id="minregionUserEmail" name="" title="Email для відправки підтвердження запиту" type="text" value="" />' +
+                        '</div>' +
+                        '</div>';
 
-                        var html =
-                            '<h4>MinRegion <sup>' + GM_info.script.version + '</sup></h4>' +
-                            '</br>' +
-                            '<div class="form-group">' +
-                            // check name in MinRegion
-                            '<div class="controls">' +
-                            '<button id="minregionCheckInMinRegion" class="action-button btn btn-lightning btn-positive" type="button" title="Перевіртити інформацію на сайті МінРегіону" style="margin-bottom: 10px;">' +
-                            '<i class="fa fa-map-o"></i>&nbsp;Отримати інформацію' +
-                            '</button>' +
-                            // send request
-                            '<button id="minregionSendRequest" class="action-button btn btn-positive btn-success" type="button" title="Відправити запит на створення НП" style="margin-bottom: 10px;">' +
-                            '<i class="fa fa-plus-square"></i>&nbsp;Запит на створення НП' +
-                            '</button>' +
-                            '</div>' +
-                            '</div>' +
-                            // info
-                            '<div class="form-group">' +
-                            '<div style="float:right; z-index:100; cursor:pointer; top:0; right:0;" id="minregionClearInfo" title="Очистити дані"><i class="fa fa-times-circle fa-lg" aria-hidden="true"></i></div>' +
-                            '<label class="control-label">Об\'єкт</label>' +
-                            '<div class="controls input-group">' +
-                            '<input class="form-control" autocomplete="off" id="minregionFoundCity" name="" title="Знайдений об\'єкт" type="text" value="" readonly="readonly" />' +
-                            '<span class="input-group-btn">' +
-                            '<button id="minregionCopyFoundCity" class="btn btn-primary" type="button" data-original-title="" title="Скопіювати у буфер обміну" style="padding: 0 8px; border-bottom-left-radius: 0; border-top-left-radius: 0; font-size: 16px">' +
-                            '<i class="fa fa-clipboard"></i>' +
-                            '</button>' +
-                            '</span>' +
-                            '</div>' +
-                            '</div>' +
-                            '<div class="form-group">' +
-                            '<div id="minregionInfo" class="map-obj-info-wrap">' +
-                            '</div>' +
-                            '</div>' +
-                            // settings
-                            '<div class="form-group">' +
-                            '<label class="control-label">Налаштування</label>' +
-                            '<div class="controls">' +
-                            '<label>Ваш email:</label>' +
-                            '<input class="form-control" autocomplete="off" id="minregionUserEmail" name="" title="Email для відправки підтвердження запиту" type="text" value="" />' +
-                            '</div>' +
-                            '</div>';
-
-                        panelElement.innerHTML = html;
-                        panelElement.className = "tab-pane";
-                        tabContent.appendChild(panelElement);
-                    } else {
-                        panelElement.id = '';
-                    }
+                    panelElement.innerHTML = html;
+                    panelElement.className = "tab-pane";
+                    tabContent.appendChild(panelElement);
                 } else {
                     panelElement.id = '';
                 }
@@ -542,18 +538,6 @@
             //if (res.responseText.match(/ServiceLogin/)) {
             //    w.location = res.finalUrl;
             //}
-        }
-
-        function getElementsByClassName(classname, node) {
-            if (!node)
-                node = document.getElementsByTagName("body")[0];
-            var a = [];
-            var re = new RegExp('\\b' + classname + '\\b');
-            var els = node.getElementsByTagName("*");
-            for (var i = 0, j = els.length; i < j; i++)
-                if (re.test(els[i].className))
-                    a.push(els[i]);
-            return a;
         }
 
         // add listener for tab changes
