@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME MinRegion
 // @namespace    madnut.ua@gmail.com
-// @version      2020.09.27.001
+// @version      2021.01.24.001
 // @description  Retrieves and display city information from MinRegion (Ukraine)
 // @author       madnut
 // @include      https://*waze.com/*editor*
@@ -113,7 +113,7 @@
         ''];
     GM_addStyle(mrStyle.join('\n'));
 
-    var requestsTimeout = 20000; // in ms
+    var requestsTimeout = 30000; // in ms
     var mrUrl = "http://atu.gki.com.ua";
     var requestUrl = "http://wazeolenta.com/wzl";
     //var requestUrl = "http://localhost:51672";
@@ -333,18 +333,26 @@
         }
 
         function getInfoCallback(res) {
-            if (validateHTTPResponse(res)) {
+            var resType = validateHTTPResponse(res);
+            if (resType == 'html') {
+                var atoID = res.responseText.match(/href="#regionInfo([0-9]+)"/)[1];
+                if (atoID) {
+                    var url = mrUrl + "/api-user/map-info?layer=7376316114267884&wrap=map_obj_info_wrap_ato&id=" + atoID;
+                    sendHTTPRequest(url, 'minregionCheckInMinRegion', 'fa fa-map-o', getInfoCallback);
+                } else {
+                    log("can't find ato ID");
+                }
+            } else if (resType == 'json') {
                 var text = JSON.parse(res.responseText);
                 updateMinRegionInfo(text);
             }
         }
 
         function onCheckMinRegion() {
-            var emptyResponse = {};
             var lnk = getSelectedSegmentInfo();
 
             if (lnk.lat && lnk.lon) {
-                updateMinRegionInfo(emptyResponse);
+                updateMinRegionInfo({});
 
                 var url = mrUrl + "/api/format?doct_id=layer_object_info&layer=7376316114267884&view=site&x=" + lnk.lat + "&y=" + lnk.lon + "&index=0&data=geom,name_ua&method=feature_ir._info_object&wrap=map_obj_info_wrap_ato";
                 sendHTTPRequest(url, 'minregionCheckInMinRegion', 'fa fa-map-o', getInfoCallback);
@@ -446,7 +454,7 @@
         }
 
         function validateHTTPResponse(res) {
-            var result = false,
+            var result,
                 displayError = true,
                 errorMsg;
             if (res) {
@@ -454,9 +462,9 @@
                     case 200:
                         displayError = false;
                         if (res.responseHeaders.match(/content-type: application\/json/i)) {
-                            result = true;
+                            result = 'json';
                         } else if (res.responseHeaders.match(/content-type: text\/html/i)) {
-                            displayHtmlPage(res);
+                            result = 'html';
                         }
                         break;
                     case 404:
@@ -495,8 +503,6 @@
         
         function updateMinRegionInfo(rs) {
             if (rs && rs.data) {
-                document.getElementById('minregionFoundCity').value = (rs.data.name_ua ? rs.data.name_ua : "");
-
                 var fixedContent = rs.html.replace("<a/>", "</a>"); // bug in MinRegion
                 fixedContent = fixedContent.replace(/<\/td>[\n\r\s]*<\/td>/g, "</td>"); // bug in MinRegion
                 fixedContent = fixedContent.replace(/icon-globe('|")\/>/g, "icon-globe$1></i>"); // bug in MinRegion
@@ -523,25 +529,19 @@
                         };
                     }
                 });
-                
+
+                var atoNameNode = document.querySelector('.obj-info-caption a.title');
+                var atoName = rs.data.name_ua ? rs.data.name_ua : atoNameNode.innerText.replace(/\s(село|селище|місто|смт)/,"").trim();
+                document.getElementById('minregionFoundCity').value = (atoName);
+
                 // draw border
-                drawCityBorder(rs.data.name_ua, rs.data.geom);
+                drawCityBorder(atoName, rs.data.geom);
             } else {
                 document.getElementById('minregionFoundCity').value = '';
                 document.getElementById('minregionInfo').innerHTML = '';
 
                 drawCityBorder(null, null);
             }
-        }
-
-        function displayHtmlPage(res) {
-            var w = window.open();
-            w.document.open();
-            w.document.write(res.responseText);
-            w.document.close();
-            //if (res.responseText.match(/ServiceLogin/)) {
-            //    w.location = res.finalUrl;
-            //}
         }
 
         // add listener for tab changes
